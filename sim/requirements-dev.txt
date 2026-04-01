@@ -1,0 +1,23 @@
+# Development dependencies for sim package
+# Install with: pip install -r requirements-dev.txt
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+pytest-asyncio>=0.21.0
+
+# Type checking
+mypy>=1.0.0
+types-PyYAML>=6.0.0  # Type stubs for PyYAML
+
+# Linting and formatting
+ruff>=0.1.0
+
+# Documentation
+sphinx>=7.0.0
+sphinx-rtd-theme>=1.0.0
+
+# Optional: Enhanced testing
+hypothesis>=6.0.0  # Property-based testing
+freezegun>=1.2.0   # Time mocking

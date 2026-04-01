@@ -1,0 +1,75 @@
+# SQL Server RCA Assistant compatibility configuration
+# ================================================
+#
+# This file contains optional defaults for local development helpers.
+# Settings can be overridden via:
+#   1. User config file: ~/.sim/config.yaml
+#   2. Environment variables (prefixed with SIM_)
+#
+# Environment variable override examples:
+#   SIM_SA_PASSWORD=MySecurePass123!
+#   SIM_HOST_PORT=14334
+#   SIM_MEMORY_LIMIT=8g
+
+# =============================================================================
+# Optional local SQL Server sidecar settings
+# =============================================================================
+sqlserver:
+  # Optional local container image to use
+  image: "mcr.microsoft.com/mssql/server:2022-latest"
+
+  # Optional local container name
+  container_name: "sim-sqlserver"
+
+  # Host port to map to local container port 1433
+  host_port: 14333
+
+  # Resource limits for the local sidecar
+  cpu_limit: "2.0"
+  memory_limit: "4g"
+
+# =============================================================================
+# Connection Settings
+# =============================================================================
+connection:
+  # Timeout for establishing connections (seconds)
+  timeout: 30
+
+  # Timeout for command execution (seconds)
+  command_timeout: 300
+
+  # Readiness check settings
+  readiness_retry_attempts: 45
+  readiness_retry_delay: 3  # seconds
+
+# =============================================================================
+# RCA (Root Cause Analysis) Settings
+# =============================================================================
+rca:
+  # Default LLM provider
+  default_provider: "anthropic"
+
+  # Anthropic model
+  anthropic_model: "claude-opus-4-6"
+
+  # Enable debug output
+  debug: false
+
+  # Maximum tokens for LLM responses
+  max_tokens: 4096
+
+  # Temperature for LLM responses (0.0 to 1.0)
+  temperature: 0.1
+
+# =============================================================================
+# Logging Settings
+# =============================================================================
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+
+  # Output format: 'text' or 'json'
+  format: "text"
+
+  # Enable colored output (console only)
+  use_color: true

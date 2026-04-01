@@ -1,0 +1,45 @@
+# Downloaded assets (large files)
+sim/assets/*.bak
+sim/assets/*.partial
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+
+# Reports and output (generated locally; keep only placeholders)
+report.json
+report_*.json
+analytics.json
+rca_report.json
+sim/output/**
+!sim/output/.gitkeep
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db

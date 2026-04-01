@@ -1,0 +1,141 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sim"
+version = "1.0.0"
+description = "SQL Server RCA Assistant"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "SQL Server RCA Assistant Contributors"}
+]
+keywords = ["sql-server", "rca", "root-cause-analysis", "database", "dba"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: System :: Monitoring",
+]
+
+dependencies = [
+    "mssql-python>=1.0.0",
+    "clickhouse-connect>=0.7.0",
+    "tenacity>=8.2.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0.0",
+    "python-dotenv>=1.0.0",
+    "anthropic>=0.40.0",
+    "httpx>=0.27.0",
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "python-multipart>=0.0.6",
+    "sse-starlette>=1.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "hypothesis>=6.0.0",
+    "freezegun>=1.2.0",
+]
+code_analysis = [
+    "claude-agent-sdk>=0.1.0",
+]
+
+[project.scripts]
+sim = "sim.cli:main"
+
+[tool.setuptools]
+package-dir = {"sim" = "."}
+packages = [
+    "sim",
+    "sim.rca",
+    "sim.rca.engine",
+    "sim.rca.llm",
+    "sim.rca.tools",
+    "sim.rca.datasources",
+    "sim.webapp",
+    "sim.webapp.backend",
+    "sim.webapp.backend.api",
+]
+
+[tool.setuptools.package-data]
+sim = ["py.typed", "config.yaml", "sql/blitz/*.sql"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.9"
+warn_unused_configs = true
+ignore_missing_imports = true
+# Disable strict checks that require extensive codebase changes
+warn_return_any = false
+no_implicit_optional = false
+strict_optional = false
+# Disable error codes that require extensive fixes
+disable_error_code = [
+    "override",      # Tool execute() methods intentionally have different signatures
+    "var-annotated", # Some local vars don't need annotations
+    "attr-defined",  # Dynamic attribute access is common
+    "index",         # Collection indexing issues
+    "call-arg",      # Dynamic call patterns
+    "assignment",    # Complex assignment patterns
+    "valid-type",    # Multiprocessing.Value typing issues
+]
+exclude = [
+    "tests/",
+    "\\.venv/",
+    "build/",
+    "dist/",
+]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+# Focus on errors and bugs, not style enforcement
+select = ["E", "F"]
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+    "E701",  # Multiple statements on one line (colon) - common in SQL files
+    "E702",  # Multiple statements on one line (semicolon)
+    "E402",  # Module level import not at top of file
+    "E722",  # Do not use bare except (TODO: fix these)
+    "F401",  # Unused imports (often used for re-exports in __init__.py)
+    "F541",  # Local variable is annotated but never used
+    "F841",  # Local variable assigned but never used
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*", "setup.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

@@ -1,0 +1,24 @@
+# SQL Server RCA Assistant dependencies
+mssql-python>=1.0.0  # SQL Server driver
+clickhouse-connect>=0.7.0  # Optional monitoring backend
+
+# Core runtime
+tenacity>=8.2.0
+rich>=13.0.0
+httpx>=0.27.0
+
+# Config and loading
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+
+# AI
+anthropic>=0.40.0
+
+# Web backend
+fastapi>=0.109.0
+uvicorn>=0.27.0
+python-multipart>=0.0.6
+sse-starlette>=1.8.0
+
+# Optional code analysis sub-agents
+claude-agent-sdk>=0.1.0

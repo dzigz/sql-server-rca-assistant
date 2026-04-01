@@ -1,0 +1,106 @@
+services:
+  # ClickHouse for optional monitoring backend storage
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1
+    container_name: clickhouse
+    ports:
+      - "8123:8123"    # HTTP interface
+      - "9000:9000"    # Native TCP
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+    environment:
+      - CLICKHOUSE_DB=rca_metrics
+    networks:
+      - rca-network
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Idempotent schema bootstrap for existing ClickHouse volumes
+  clickhouse-init:
+    image: clickhouse/clickhouse-server:24.1
+    container_name: clickhouse-init
+    volumes:
+      - ./clickhouse/init:/init:ro
+    command:
+      - /bin/sh
+      - -lc
+      - clickhouse-client --host clickhouse --query "SELECT 1" &&
+        clickhouse-client --host clickhouse --multiquery < /init/01_schema.sql
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - rca-network
+    restart: "no"
+
+  # Custom Python DMV collector for external SQL Server targets
+  dmv-collector:
+    build:
+      context: ./collectors/dmv
+      dockerfile: Dockerfile
+    container_name: dmv-collector
+    ports:
+      - "8080:8080"    # Collector health/status API
+    environment:
+      - SQLSERVER_HOST=${SQLSERVER_HOST:?Set SQLSERVER_HOST}
+      - SQLSERVER_PORT=${SQLSERVER_PORT:-1433}
+      - SQLSERVER_USER=${SQLSERVER_USER:-sa}
+      - SQLSERVER_PASSWORD=${SQLSERVER_PASSWORD:?Set SQLSERVER_PASSWORD}
+      - SQLSERVER_DATABASE=${SQLSERVER_DATABASE:-master}
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=8123
+      - CLICKHOUSE_DATABASE=rca_metrics
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-rca}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-rca_password}
+      - COLLECTION_INTERVAL=${COLLECTION_INTERVAL:-5}
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      clickhouse-init:
+        condition: service_completed_successfully
+    networks:
+      - rca-network
+    restart: unless-stopped
+
+  # Grafana for optional monitoring visualization
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    ports:
+      - "3001:3000"    # Avoid conflict with app frontend on 3000
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?Set GRAFANA_PASSWORD}
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=${GRAFANA_ANONYMOUS_ENABLED:-true}
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=${GRAFANA_ANONYMOUS_ORG_ROLE:-Viewer}
+      - GF_SECURITY_COOKIE_SAMESITE=lax
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - rca-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  clickhouse_data:
+  grafana_data:
+
+networks:
+  rca-network:
+    driver: bridge

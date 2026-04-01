@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f7fafb;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --foreground: #0e1a22;
+  --muted: #eaf1f5;
+  --muted-foreground: #5f7280;
+  --border: #d5e0e6;
+
+  --accent: #0a7ea4;
+  --accent-foreground: #ffffff;
+  --accent-2: #14b8a6;
+
+  --success: #1f9d55;
+  --warning: #c77600;
+  --danger: #c93e3e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b141a;
+    --surface: #111d24;
+    --card: #13212a;
+    --foreground: #dde7ee;
+    --muted: #1a2a33;
+    --muted-foreground: #8fa7b8;
+    --border: #243a48;
+
+    --accent: #27a7d1;
+    --accent-foreground: #061017;
+    --accent-2: #2ccfbd;
+
+    --success: #33b56c;
+    --warning: #de9a2f;
+    --danger: #eb6a6a;
+  }
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background:
+    radial-gradient(circle at 15% -10%, rgba(10, 126, 164, 0.12), transparent 30%),
+    radial-gradient(circle at 85% -20%, rgba(20, 184, 166, 0.1), transparent 28%),
+    var(--background);
+  color: var(--foreground);
+  font-family: 'IBM Plex Sans', 'Avenir Next', 'Segoe UI', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+  font-family: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
+}
+
+pre,
+code,
+.font-mono {
+  font-family: 'IBM Plex Mono', 'JetBrains Mono', 'SFMono-Regular', monospace;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground) 70%, transparent);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.cursor-blink {
+  animation: blink 1s ease-in-out infinite;
+}
