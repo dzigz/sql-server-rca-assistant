@@ -10,6 +10,7 @@ import type {
   SessionSummary,
   ToolCall,
 } from '@/components/chat/types'
+import { buildApiUrl } from '@/lib/api'
 
 const SESSION_STORAGE_KEY = 'sim_session_id'
 
@@ -109,7 +110,7 @@ export function useChatSession({
     setIsHistoryLoading(true)
     setHistoryError(null)
     try {
-      const response = await fetch(`${apiBase}/api/session/summaries`)
+      const response = await fetch(buildApiUrl('/api/session/summaries', apiBase))
       if (!response.ok) {
         throw new Error('Failed to load session history')
       }
@@ -132,7 +133,8 @@ export function useChatSession({
     setIsConnecting(true)
     setError(null)
     try {
-      const response = await fetch(`${apiBase}/api/session/create`, {
+      const createSessionUrl = buildApiUrl('/api/session/create', apiBase)
+      const response = await fetch(createSessionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -165,7 +167,12 @@ export function useChatSession({
             detail = ''
           }
         }
-        throw new Error(detail ? `Failed to create session: ${detail}` : 'Failed to create session')
+        const statusLabel = `${response.status} ${response.statusText}`.trim()
+        throw new Error(
+          detail
+            ? `Failed to create session (${statusLabel}) via ${createSessionUrl}: ${detail}`
+            : `Failed to create session (${statusLabel}) via ${createSessionUrl}`,
+        )
       }
 
       const data = await response.json()
@@ -204,7 +211,7 @@ export function useChatSession({
       setIsConnecting(true)
       setError(null)
       try {
-        const historyResponse = await fetch(`${apiBase}/api/session/${targetSessionId}/history`)
+        const historyResponse = await fetch(buildApiUrl(`/api/session/${targetSessionId}/history`, apiBase))
         if (!historyResponse.ok) {
           localStorage.removeItem(SESSION_STORAGE_KEY)
           await createSession()
@@ -260,7 +267,7 @@ export function useChatSession({
 
     setBlitzInstallState({ status: 'installing' })
     try {
-      const response = await fetch(`${apiBase}/api/session/${sessionId}/blitz/install`, {
+      const response = await fetch(buildApiUrl(`/api/session/${sessionId}/blitz/install`, apiBase), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm: true }),
@@ -298,7 +305,7 @@ export function useChatSession({
     }
 
     try {
-      const response = await fetch(`${apiBase}/api/session/${sessionId}/blitz/decline`, {
+      const response = await fetch(buildApiUrl(`/api/session/${sessionId}/blitz/decline`, apiBase), {
         method: 'POST',
       })
 
@@ -390,7 +397,7 @@ export function useChatSession({
           files.forEach((file) => formData.append('files', file))
         }
 
-        const response = await fetch(`${apiBase}/api/chat/stream`, {
+        const response = await fetch(buildApiUrl('/api/chat/stream', apiBase), {
           method: 'POST',
           body: formData,
           signal: abortController.signal,

@@ -44,6 +44,32 @@ def _apply_backend_env(overrides: dict[str, str | None], base: dict[str, str] | 
     return env
 
 
+def _wait_for_http_ok(
+    url: str,
+    *,
+    attempts: int,
+    request_timeout: float = 1.5,
+    sleep_seconds: float = 1.0,
+) -> tuple[bool, str]:
+    """
+    Poll an HTTP endpoint until it returns 200 or the retry budget is exhausted.
+
+    Startup races can surface as connection resets, remote disconnects, or plain
+    connect failures. Treat all of those as "not ready yet" and keep polling.
+    """
+    last_error = ""
+    for _ in range(attempts):
+        try:
+            with urllib.request.urlopen(url, timeout=request_timeout) as resp:
+                if resp.status == 200:
+                    return True, ""
+                last_error = f"HTTP {resp.status}"
+        except Exception as exc:
+            last_error = str(exc)
+        time.sleep(sleep_seconds)
+    return False, last_error
+
+
 def _to_bool(value: str | bool | None, default: bool = False) -> bool:
     """Parse a bool-like value."""
     if isinstance(value, bool):
@@ -138,23 +164,57 @@ def _start_monitoring_stack(args: argparse.Namespace, backend_env: dict[str, str
         "dmv-collector",
         "grafana",
     ]
-    subprocess.run(cmd, cwd=compose_dir, env=compose_env, check=True)
+    try:
+        subprocess.run(cmd, cwd=compose_dir, env=compose_env, check=True)
+    except FileNotFoundError as exc:
+        raise ValueError(
+            "Docker is required to start the optional monitoring stack, but the 'docker' command "
+            "was not found. Install Docker Desktop/Engine, or run without monitoring using "
+            "'python -m sim webapp start --no-monitoring-stack --no-monitoring'."
+        ) from exc
+    except subprocess.CalledProcessError as exc:
+        stderr = ""
+        if exc.stderr:
+            stderr = exc.stderr.strip()
+        elif exc.stdout:
+            stderr = exc.stdout.strip()
 
-    # Best-effort readiness checks.
-    for _ in range(30):
-        try:
-            with urllib.request.urlopen("http://127.0.0.1:8123/ping", timeout=1.5) as resp:
-                if resp.status == 200:
-                    break
-        except urllib.error.URLError:
-            time.sleep(1)
-    for _ in range(30):
-        try:
-            with urllib.request.urlopen("http://127.0.0.1:8080/health", timeout=1.5) as resp:
-                if resp.status == 200:
-                    break
-        except urllib.error.URLError:
-            time.sleep(1)
+        if "Cannot connect to the Docker daemon" in stderr:
+            raise ValueError(
+                "Docker is installed but the Docker daemon is not running. Start Docker Desktop/Engine "
+                "and retry, or run without monitoring using "
+                "'python -m sim webapp start --no-monitoring-stack --no-monitoring'."
+            ) from exc
+
+        raise ValueError(
+            "Failed to start the optional monitoring stack via docker compose. "
+            f"Details: {stderr or exc}"
+        ) from exc
+
+    # Best-effort readiness checks. The DMV collector may spend up to ~60s
+    # waiting for SQL Server before its HTTP API comes up.
+    clickhouse_ready, clickhouse_error = _wait_for_http_ok(
+        "http://127.0.0.1:8123/ping",
+        attempts=30,
+    )
+    if not clickhouse_ready:
+        raise ValueError(
+            "Monitoring stack started but ClickHouse did not become ready at "
+            "http://127.0.0.1:8123/ping. "
+            f"Last error: {clickhouse_error or 'unknown error'}"
+        )
+
+    collector_ready, collector_error = _wait_for_http_ok(
+        "http://127.0.0.1:8080/health",
+        attempts=90,
+    )
+    if not collector_ready:
+        raise ValueError(
+            "Monitoring containers started, but the DMV collector did not become ready at "
+            "http://127.0.0.1:8080/health. "
+            f"Last error: {collector_error or 'unknown error'}. "
+            "Check collector logs with 'docker compose -f sim/docker/docker-compose.yaml logs dmv-collector'."
+        )
 
     _print("[green]Monitoring stack is up.[/green]")
     return grafana_password
@@ -165,6 +225,7 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
     backend_port = args.backend_port
     frontend_port = args.frontend_port
     repo_path = getattr(args, "repo_path", None)
+    backend_host = "127.0.0.1"
 
     backend_env = _backend_env_from_args(args)
     _validate_sqlserver_env(backend_env)
@@ -176,7 +237,7 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
     frontend_url = f"http://localhost:{frontend_port}"
 
     _print("[cyan]Starting SQL Server RCA Assistant...[/cyan]")
-    _print(f"  Backend:  http://localhost:{backend_port}")
+    _print(f"  Backend:  http://{backend_host}:{backend_port}")
     _print(f"  Frontend: {frontend_url}")
     _print(
         f"  SQL Server target: [green]{backend_env.get('SQLSERVER_HOST')}:{backend_env.get('SQLSERVER_PORT', '1433')}[/green]"
@@ -217,7 +278,7 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
                 "uvicorn",
                 "sim.webapp.backend.main:app",
                 "--host",
-                "0.0.0.0",
+                backend_host,
                 "--port",
                 str(backend_port),
             ],
@@ -226,7 +287,7 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
         )
         processes.append(("Backend", backend_proc))
 
-        health_url = f"http://127.0.0.1:{backend_port}/health"
+        health_url = f"http://{backend_host}:{backend_port}/health"
         backend_ready = False
         for _ in range(40):
             if backend_proc.poll() is not None:
@@ -245,7 +306,7 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
 
         frontend_env = _apply_backend_env(
             {
-                "NEXT_PUBLIC_API_URL": f"http://127.0.0.1:{backend_port}",
+                "NEXT_PUBLIC_API_URL": f"http://{backend_host}:{backend_port}",
                 "NEXT_PUBLIC_REPO_PATH": repo_path,
                 "NEXT_PUBLIC_SQLSERVER_HOST": backend_env.get("SQLSERVER_HOST"),
                 "NEXT_PUBLIC_SQLSERVER_PORT": backend_env.get("SQLSERVER_PORT", "1433"),
@@ -561,8 +622,8 @@ def main() -> None:
     webapp_backend_parser.add_argument(
         "--host",
         type=str,
-        default="0.0.0.0",
-        help="Backend host (default: 0.0.0.0)",
+        default="127.0.0.1",
+        help="Backend host (default: 127.0.0.1)",
     )
     add_sqlserver_options(webapp_backend_parser)
     add_monitoring_options(webapp_backend_parser, default_enabled=True)

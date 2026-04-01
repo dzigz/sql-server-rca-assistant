@@ -21,9 +21,10 @@ This stage intentionally removes simulation/training workflows and focuses on re
 ## Install
 
 ```bash
-python -m venv sim/.venv
+python3.11 -m venv sim/.venv
 source sim/.venv/bin/activate
-pip install -r sim/requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r sim/requirements.txt
 ```
 
 ## Run Web App

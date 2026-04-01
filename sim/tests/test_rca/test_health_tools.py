@@ -21,7 +21,7 @@ if importlib.util.find_spec("mssql_python") is None:
         connect=_dummy_connect,
     )
 
-from sim.rca.tools.health_tools import RunSpBlitzTool
+from sim.rca.tools.health_tools import GetServerConfigTool, RunSpBlitzTool
 
 
 def test_run_sp_blitz_returns_install_offer_when_missing(monkeypatch):
@@ -107,3 +107,54 @@ def test_install_first_responder_kit_direct_executes_scripts(monkeypatch, tmp_pa
     assert result["scripts_executed"] == scripts
     assert executed_scripts == scripts
     assert result["executed_batches"] == 4
+
+
+def test_get_server_config_casts_sql_variant_columns(monkeypatch):
+    tool = GetServerConfigTool(
+        sqlserver_host="sql.example.com",
+        sqlserver_password="secret",
+    )
+
+    executed_sql = []
+
+    class DummyCursor:
+        description = [
+            ("name",),
+            ("value",),
+            ("value_in_use",),
+            ("minimum",),
+            ("maximum",),
+            ("description",),
+        ]
+
+        def execute(self, sql, params=None):
+            executed_sql.append((sql, params))
+
+        def fetchall(self):
+            return [
+                ("max degree of parallelism", 4, 4, 0, 32767, "Maximum degree"),
+            ]
+
+    class DummyConnection:
+        def cursor(self):
+            return DummyCursor()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    monkeypatch.setattr(tool, "_get_connection", lambda: DummyConnection())
+
+    result = tool.execute()
+
+    assert result.success is True
+    assert result.data["configurations"][0]["value"] == 4
+    assert len(executed_sql) == 2
+    select_sql, params = executed_sql[1]
+    assert params is None
+    assert "CAST(value AS bigint) AS value" in select_sql
+    assert "CAST(value_in_use AS bigint) AS value_in_use" in select_sql
+    assert "CAST(minimum AS bigint) AS minimum" in select_sql
+    assert "CAST(maximum AS bigint) AS maximum" in select_sql

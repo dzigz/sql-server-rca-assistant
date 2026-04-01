@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { Sparkles, Loader2, X, BarChart3, LineChart, PieChart, Table2, Trash2 } from 'lucide-react'
 import { LazyGrafanaEmbed } from './LazyGrafanaEmbed'
+import { buildApiUrl, normalizeApiBase } from '@/lib/api'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000')
 
 type ChartType = 'timeseries' | 'barchart' | 'piechart' | 'table'
 
@@ -51,7 +52,7 @@ export function ChartGenerator({ theme }: ChartGeneratorProps) {
     setError(null)
 
     try {
-      const response = await fetch(`${API_URL}/api/grafana/generate`, {
+      const response = await fetch(buildApiUrl('/api/grafana/generate', API_BASE), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

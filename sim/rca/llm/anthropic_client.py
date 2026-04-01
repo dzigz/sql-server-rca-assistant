@@ -72,6 +72,45 @@ class AnthropicClient(LLMClient):
             # Use stable API surface for Claude 4.6 models.
             self._client = Anthropic(api_key=self.config.api_key)
         return self._client
+
+    def _uses_adaptive_thinking(self) -> bool:
+        """Return True when the configured model should use adaptive thinking."""
+        model = (self.config.model or "").strip().lower()
+        return model.startswith("claude-opus-4-6")
+
+    def _effort_for_budget(self, thinking_budget: int) -> str:
+        """Map legacy thinking budgets to Anthropic's effort levels."""
+        if thinking_budget >= 24000:
+            return "max"
+        if thinking_budget >= 12000:
+            return "high"
+        if thinking_budget >= 4000:
+            return "medium"
+        return "low"
+
+    def _apply_thinking_config(
+        self,
+        kwargs: dict[str, Any],
+        *,
+        extended_thinking: bool,
+        thinking_budget: int,
+    ) -> None:
+        """Apply Anthropic thinking settings for the configured model."""
+        if not extended_thinking:
+            return
+
+        if self._uses_adaptive_thinking():
+            kwargs["thinking"] = {"type": "adaptive"}
+            kwargs["output_config"] = {"effort": self._effort_for_budget(thinking_budget)}
+        else:
+            kwargs["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": thinking_budget,
+            }
+
+        # Keep a larger output budget when extended thinking is enabled.
+        if kwargs["max_tokens"] < thinking_budget + 4000:
+            kwargs["max_tokens"] = thinking_budget + 8000
     
     def chat(
         self,
@@ -115,15 +154,11 @@ class AnthropicClient(LLMClient):
         if system:
             kwargs["system"] = system
 
-        # Extended thinking support
-        if extended_thinking:
-            kwargs["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": thinking_budget
-            }
-            # Extended thinking requires higher max_tokens
-            if kwargs["max_tokens"] < thinking_budget + 4000:
-                kwargs["max_tokens"] = thinking_budget + 8000
+        self._apply_thinking_config(
+            kwargs,
+            extended_thinking=extended_thinking,
+            thinking_budget=thinking_budget,
+        )
 
         if tools:
             kwargs["tools"] = [t.to_anthropic_format() for t in tools]
@@ -189,15 +224,11 @@ class AnthropicClient(LLMClient):
         if system:
             kwargs["system"] = system
 
-        # Extended thinking support
-        if extended_thinking:
-            kwargs["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": thinking_budget
-            }
-            # Extended thinking requires higher max_tokens
-            if kwargs["max_tokens"] < thinking_budget + 4000:
-                kwargs["max_tokens"] = thinking_budget + 8000
+        self._apply_thinking_config(
+            kwargs,
+            extended_thinking=extended_thinking,
+            thinking_budget=thinking_budget,
+        )
 
         if tools:
             kwargs["tools"] = [t.to_anthropic_format() for t in tools]

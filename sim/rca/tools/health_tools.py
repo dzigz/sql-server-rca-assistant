@@ -665,6 +665,24 @@ class GetServerConfigTool(RCATool):
         )
         return mssql.connect(connection_str=conn_str, timeout=self._connection_timeout)
 
+    def _base_config_query(self) -> str:
+        """
+        Return a configuration query that avoids sql_variant result columns.
+
+        mssql-python currently fails when fetching raw sql_variant values from
+        sys.configurations. Cast the numeric configuration fields to bigint so
+        the driver receives concrete scalar types.
+        """
+        return (
+            "SELECT name, "
+            "CAST(value AS bigint) AS value, "
+            "CAST(value_in_use AS bigint) AS value_in_use, "
+            "CAST(minimum AS bigint) AS minimum, "
+            "CAST(maximum AS bigint) AS maximum, "
+            "CAST(description AS nvarchar(4000)) AS description "
+            "FROM sys.configurations"
+        )
+
     @property
     def name(self) -> str:
         return "get_server_config"
@@ -707,8 +725,7 @@ parallelism settings, and other important server options."""
 
             sql_query = (
                 "SET NOCOUNT ON; "
-                "SELECT name, value, value_in_use, minimum, maximum, description "
-                f"FROM sys.configurations {where_clause} ORDER BY name;"
+                f"{self._base_config_query()} {where_clause} ORDER BY name;"
             )
 
             bash_cmd = (
@@ -738,12 +755,7 @@ parallelism settings, and other important server options."""
             cursor.execute("SET NOCOUNT ON")
 
             if filter_value:
-                query = (
-                    "SELECT name, value, value_in_use, minimum, maximum, description "
-                    "FROM sys.configurations "
-                    "WHERE name LIKE ? "
-                    "ORDER BY name"
-                )
+                query = f"{self._base_config_query()} WHERE name LIKE ? ORDER BY name"
                 like_filter = f"%{filter_value}%"
                 try:
                     cursor.execute(query, (like_filter,))
@@ -751,16 +763,12 @@ parallelism settings, and other important server options."""
                     # Fallback for drivers that don't expose positional parameter binding.
                     safe_filter = filter_value.replace("'", "''")
                     cursor.execute(
-                        "SELECT name, value, value_in_use, minimum, maximum, description "
-                        "FROM sys.configurations "
+                        f"{self._base_config_query()} "
                         f"WHERE name LIKE '%{safe_filter}%' "
                         "ORDER BY name"
                     )
             else:
-                cursor.execute(
-                    "SELECT name, value, value_in_use, minimum, maximum, description "
-                    "FROM sys.configurations ORDER BY name"
-                )
+                cursor.execute(f"{self._base_config_query()} ORDER BY name")
 
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description] if cursor.description else []

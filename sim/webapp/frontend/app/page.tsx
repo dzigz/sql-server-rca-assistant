@@ -6,8 +6,9 @@ import { ChatMessage } from '@/components/ChatMessage'
 import { MessageInput } from '@/components/MessageInput'
 import { ChatHeader, HistoryPane } from '@/components/chat'
 import { useChatSession } from '@/hooks/use-chat-session'
+import { normalizeApiBase } from '@/lib/api'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000')
 const REPO_PATH = process.env.NEXT_PUBLIC_REPO_PATH || null
 const SQLSERVER_HOST = process.env.NEXT_PUBLIC_SQLSERVER_HOST || null
 const SQLSERVER_PORT = Number(process.env.NEXT_PUBLIC_SQLSERVER_PORT || '1433')

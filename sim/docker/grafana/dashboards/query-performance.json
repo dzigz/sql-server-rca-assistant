@@ -90,7 +90,7 @@
           "editorType": "sql",
           "format": 1,
           "queryType": "table",
-          "rawSql": "SELECT\n  concat('Q', toString(row_number() OVER (ORDER BY max_cpu DESC))) as query_label,\n  max_cpu as cpu_time_us\nFROM (\n  SELECT query_hash, max(total_worker_time_us) as max_cpu\n  FROM rca_metrics.query_stats\n  WHERE collected_at >= $__fromTime AND collected_at <= $__toTime\n    AND sql_text LIKE '%Incidents.Sim%'\n  GROUP BY query_hash\n  ORDER BY max_cpu DESC\n  LIMIT 10\n)",
+          "rawSql": "SELECT\n  concat('Q', toString(row_number() OVER (ORDER BY max_cpu DESC))) as query_label,\n  max_cpu as cpu_time_us\nFROM (\n  SELECT query_hash, max(total_worker_time_us) as max_cpu\n  FROM rca_metrics.query_stats\n  WHERE collected_at >= $__fromTime AND collected_at <= $__toTime\n  GROUP BY query_hash\n  ORDER BY max_cpu DESC\n  LIMIT 10\n)",
           "refId": "A"
         }
       ],
@@ -178,7 +178,7 @@
           "editorType": "sql",
           "format": 1,
           "queryType": "table",
-          "rawSql": "SELECT\n  concat('Q', toString(row_number() OVER (ORDER BY max_reads DESC))) as query_label,\n  max_reads as logical_reads\nFROM (\n  SELECT query_hash, max(total_logical_reads) as max_reads\n  FROM rca_metrics.query_stats\n  WHERE collected_at >= $__fromTime AND collected_at <= $__toTime\n    AND sql_text LIKE '%Incidents.Sim%'\n  GROUP BY query_hash\n  ORDER BY max_reads DESC\n  LIMIT 10\n)",
+          "rawSql": "SELECT\n  concat('Q', toString(row_number() OVER (ORDER BY max_reads DESC))) as query_label,\n  max_reads as logical_reads\nFROM (\n  SELECT query_hash, max(total_logical_reads) as max_reads\n  FROM rca_metrics.query_stats\n  WHERE collected_at >= $__fromTime AND collected_at <= $__toTime\n  GROUP BY query_hash\n  ORDER BY max_reads DESC\n  LIMIT 10\n)",
           "refId": "A"
         }
       ],
@@ -294,7 +294,7 @@
           "editorType": "sql",
           "format": 1,
           "queryType": "table",
-          "rawSql": "SELECT\n  query_hash,\n  any(substring(sql_text, 1, 100)) as query_preview,\n  max(execution_count) as executions,\n  max(total_worker_time_us) as cpu_time_us,\n  max(total_logical_reads) as logical_reads,\n  max(total_elapsed_time_us) as elapsed_time_us\nFROM rca_metrics.query_stats\nWHERE collected_at >= $__fromTime\n  AND collected_at <= $__toTime\n  AND sql_text LIKE '%Incidents.Sim%'\nGROUP BY query_hash\nORDER BY cpu_time_us DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  query_hash,\n  any(substring(sql_text, 1, 100)) as query_preview,\n  max(execution_count) as executions,\n  max(total_worker_time_us) as cpu_time_us,\n  max(total_logical_reads) as logical_reads,\n  max(total_elapsed_time_us) as elapsed_time_us\nFROM rca_metrics.query_stats\nWHERE collected_at >= $__fromTime\n  AND collected_at <= $__toTime\nGROUP BY query_hash\nORDER BY cpu_time_us DESC\nLIMIT 20",
           "refId": "A"
         }
       ],
@@ -405,6 +405,6 @@
   "timezone": "",
   "title": "Query Performance",
   "uid": "query-performance",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
