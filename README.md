@@ -1,12 +1,33 @@
 # SQL Server RCA Assistant
 
-Open-source local web app for SQL Server performance analysis.
+SQL Server RCA Assistant is a local-first tool that helps you understand why your database, or your app, is slow.
 
-Stage 1 scope:
-- SQL Server-only diagnostics
-- Chat-based RCA assistant
-- First Responder Kit (sp_Blitz*) integration
-- Optional ClickHouse monitoring backend
+It combines SQL Server diagnostics, lightweight monitoring, and an AI-driven investigation layer to turn raw signals such as waits, queries, blocking, and resource pressure into clear root-cause explanations and actionable next steps.
+
+Unlike traditional tools, it does not stop at the database. It can also connect performance issues back to your application code, helping you understand which queries, endpoints, or ORM patterns are actually causing the slowdown.
+
+Whether you are an accidental DBA debugging a production issue or a professional DBA doing deep performance analysis, it helps you go from "something is slow" to "this is the cause and here is what to fix."
+
+## What It Does
+
+- Connects directly to your SQL Server instance and runs proven diagnostics such as First Responder Kit-style checks
+- Surfaces key signals: waits, blocking chains, top queries, memory pressure, CPU, and I/O
+- Optionally collects telemetry into ClickHouse for baseline-vs-incident comparison
+- Explains likely root causes in plain language, with supporting evidence
+- Prioritizes contributing factors instead of dumping raw metrics
+- Suggests concrete next steps and fixes, not just observations
+- Optionally uses `--repo-path` to correlate database issues with:
+  - application endpoints or features
+  - query paths and ORM-generated SQL
+  - inefficient patterns such as N+1 queries, missing batching, and over-fetching
+
+## Example Questions You Can Ask
+
+- "CPU spiked at 09:40. What caused it?"
+- "Users are hitting timeouts: blocking, memory, or bad plans?"
+- "What changed compared to baseline?"
+- "Why is the database slow right now?"
+- "My invoices page is slow. Where in the code and queries is the bottleneck?"
 
 ## Manual (Start Here)
 
