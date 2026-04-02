@@ -8,6 +8,8 @@ Unlike traditional tools, it does not stop at the database. It can also connect 
 
 Whether you are an accidental DBA debugging a production issue or a professional DBA doing deep performance analysis, it helps you go from "something is slow" to "this is the cause and here is what to fix."
 
+![SQL Server RCA Assistant screenshot](docs/images/sql_assistant_screenshot.png)
+
 ## What It Does
 
 - Connects directly to your SQL Server instance and runs proven diagnostics such as First Responder Kit-style checks
