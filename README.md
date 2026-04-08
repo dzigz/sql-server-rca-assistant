@@ -47,6 +47,7 @@ python3.11 -m venv sim/.venv
 source sim/.venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r sim/requirements.txt
+npm --prefix sim/webapp/frontend install
 ```
 
 3. Point the app to your SQL Server target

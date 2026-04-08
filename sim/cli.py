@@ -70,6 +70,16 @@ def _wait_for_http_ok(
     return False, last_error
 
 
+def _ensure_frontend_dependencies(frontend_dir: Path) -> None:
+    """Install frontend dependencies if Next.js packages are missing."""
+    next_bin = frontend_dir / "node_modules" / ".bin" / "next"
+    if next_bin.exists():
+        return
+
+    _print("[yellow]Installing frontend dependencies...[/yellow]")
+    subprocess.run(["npm", "install"], cwd=frontend_dir, check=True)
+
+
 def _to_bool(value: str | bool | None, default: bool = False) -> bool:
     """Parse a bool-like value."""
     if isinstance(value, bool):
@@ -271,6 +281,8 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
     processes: list[tuple[str, subprocess.Popen]] = []
 
     try:
+        _ensure_frontend_dependencies(frontend_dir)
+
         backend_proc = subprocess.Popen(
             [
                 sys.executable,
@@ -419,9 +431,7 @@ def cmd_webapp_frontend(args: argparse.Namespace) -> None:
         }
     )
 
-    if not (frontend_dir / "node_modules").exists():
-        _print("[yellow]Installing frontend dependencies...[/yellow]")
-        subprocess.run(["npm", "install"], cwd=frontend_dir, check=True)
+    _ensure_frontend_dependencies(frontend_dir)
 
     try:
         subprocess.run(
