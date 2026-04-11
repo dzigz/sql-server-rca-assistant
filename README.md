@@ -34,9 +34,48 @@ Whether you are an accidental DBA debugging a production issue or a professional
 ## Manual (Start Here)
 
 1. Prerequisites
+- Primary tested environment is macOS, hence the documented prerequisites setup is currently macOS-focused. Linux and Windows should work by installing the same prerequisites.
+- Homebrew is the recommended package manager on macOS. If you do not have it yet:
+
+```bash
+xcode-select --install
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+Then follow the `brew shellenv` command printed by the installer so `brew` is available in your shell.
+
 - Python 3.11+
+
+```bash
+brew install python@3.11
+python3.11 --version
+```
+
+You should see `Python 3.11.x` or newer.
+
 - Node.js 20.9+
+
+```bash
+brew install node@24
+echo 'export PATH="$(brew --prefix node@24)/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+node --version
+npm --version
+```
+
+Any `node` version `>= 20.9.0` is fine.
+
 - Docker Desktop/Engine running (default setup)
+
+```bash
+brew install --cask docker-desktop
+open -a Docker
+docker info
+docker compose version
+```
+
+Wait until Docker Desktop is fully started before running the app. `docker info` confirms the Docker daemon is up, and Docker Desktop already includes Docker Compose.
+
 - A reachable SQL Server instance and credentials with diagnostic permissions
 
 2. Install dependencies
