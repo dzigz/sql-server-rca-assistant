@@ -33,7 +33,7 @@ Whether you are an accidental DBA debugging a production issue or a professional
 
 ## Manual (Start Here)
 
-1. Prerequisites
+### Prerequisites
 - Primary tested environment is macOS, hence the documented prerequisites setup is currently macOS-focused. Linux and Windows should work by installing the same prerequisites.
 - Homebrew is the recommended package manager on macOS. If you do not have it yet:
 
@@ -78,7 +78,7 @@ Wait until Docker Desktop is fully started before running the app. `docker info`
 
 - A reachable SQL Server instance and credentials with diagnostic permissions
 
-2. Install dependencies
+### Install Dependencies
 
 ```bash
 # From repo root
@@ -89,7 +89,7 @@ python -m pip install -r sim/requirements.txt
 npm --prefix sim/webapp/frontend install
 ```
 
-3. Point the app to your SQL Server target
+### Point the App to Your SQL Server Target
 
 ```bash
 export SQLSERVER_HOST='your-sqlserver-host'
@@ -99,7 +99,7 @@ export SQLSERVER_PASSWORD='your-password'
 export SQLSERVER_DATABASE='master'
 ```
 
-4. Start everything (default one-command flow)
+### Start Everything
 
 ```bash
 python -m sim webapp start
@@ -140,7 +140,7 @@ python -m sim webapp start --no-monitoring-stack
 - Monitoring-backed chat analysis needs baseline data before recent-vs-baseline comparisons are meaningful. Plan to wait about 10-15 minutes after the collector starts.
 - Direct SQL diagnostics such as `sp_Blitz` and server configuration checks work immediately; they do not require the monitoring stack.
 
-5. Optional: enable application code analysis
+### Optional: Enable Application Code Analysis
 
 ```bash
 python -m sim webapp start --repo-path /absolute/path/to/your/application
@@ -159,20 +159,20 @@ python -m pip install '.[code_analysis]'
 
 - On startup, verify code analysis is active by checking for a terminal line like `Code Analysis: Enabled (/absolute/path/to/your/application)`.
 
-6. Open the app and run analysis
+### Open the App and Run Analysis
 - Open [http://localhost:3000](http://localhost:3000).
 - Create a session for your SQL Server target.
 - Ask for analysis of the issue you are seeing (for example: "CPU spikes started at 09:40 UTC, analyze likely root causes and next checks").
 - The assistant runs SQL Server diagnostics and returns RCA + recommended actions.
 - Optional dashboards: open `http://localhost:3001` and sign in with `admin` plus the password printed by startup.
 
-7. Optional: run without monitoring stack
+### Optional: Run Without Monitoring Stack
 
 ```bash
 python -m sim webapp start --no-monitoring-stack --no-monitoring
 ```
 
-8. Stop services
+### Stop Services
 
 ```bash
 # Stop web app/backend process
@@ -182,7 +182,7 @@ python -m sim webapp start --no-monitoring-stack --no-monitoring
 docker compose -f sim/docker/docker-compose.yaml down
 ```
 
-9. Monitoring troubleshooting
+### Monitoring Troubleshooting
 
 ```bash
 docker compose -f sim/docker/docker-compose.yaml ps
