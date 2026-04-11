@@ -80,6 +80,72 @@ def _ensure_frontend_dependencies(frontend_dir: Path) -> None:
     subprocess.run(["npm", "install"], cwd=frontend_dir, check=True)
 
 
+def _get_preferred_backend_python(sim_dir: Path) -> Path:
+    """Prefer the project-local virtualenv interpreter when it exists."""
+    venv_python = sim_dir / ".venv" / "bin" / "python"
+    if venv_python.exists():
+        return venv_python
+    return Path(sys.executable)
+
+
+def _same_python_interpreter(left: Path, right: Path) -> bool:
+    """Best-effort comparison for Python interpreter paths."""
+    try:
+        return left.resolve() == right.resolve()
+    except OSError:
+        return str(left) == str(right)
+
+
+def _ensure_backend_python_dependencies(python_executable: Path, sim_dir: Path) -> None:
+    """Fail fast with an actionable message when backend Python deps are missing."""
+    check_code = """
+import importlib.util
+import sys
+
+required = {
+    "fastapi": "fastapi",
+    "uvicorn": "uvicorn",
+    "multipart": "python-multipart",
+}
+missing = [package for module, package in required.items() if importlib.util.find_spec(module) is None]
+if missing:
+    print("\\n".join(missing))
+    sys.exit(1)
+"""
+    result = subprocess.run(
+        [str(python_executable), "-c", check_code],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode == 0:
+        return
+
+    missing_packages = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    venv_python = sim_dir / ".venv" / "bin" / "python"
+    if venv_python.exists():
+        install_hint = (
+            "Install the missing backend dependencies into the project environment with:\n"
+            "  sim/.venv/bin/python -m pip install -r sim/requirements.txt\n"
+            "Then rerun:\n"
+            "  python -m sim webapp start"
+        )
+    else:
+        install_hint = (
+            "Create and install the project environment with:\n"
+            "  python3.11 -m venv sim/.venv\n"
+            "  sim/.venv/bin/python -m pip install -r sim/requirements.txt\n"
+            "Then rerun:\n"
+            "  python -m sim webapp start"
+        )
+
+    raise ValueError(
+        "Backend dependencies are missing in the selected interpreter "
+        f"({python_executable}). Missing packages: {', '.join(missing_packages) or 'unknown'}. "
+        f"{install_hint}"
+    )
+
+
 def _to_bool(value: str | bool | None, default: bool = False) -> bool:
     """Parse a bool-like value."""
     if isinstance(value, bool):
@@ -236,9 +302,12 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
     frontend_port = args.frontend_port
     repo_path = getattr(args, "repo_path", None)
     backend_host = "127.0.0.1"
+    sim_dir = Path(__file__).parent
+    backend_python = _get_preferred_backend_python(sim_dir)
 
     backend_env = _backend_env_from_args(args)
     _validate_sqlserver_env(backend_env)
+    _ensure_backend_python_dependencies(backend_python, sim_dir)
 
     grafana_password: str | None = None
     if getattr(args, "enable_monitoring", True) and getattr(args, "start_monitoring_stack", True):
@@ -275,7 +344,6 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
     _print(f"\n[green]Open {frontend_url} in your browser[/green]")
     _print("[dim]Press Ctrl+C to stop[/dim]\n")
 
-    sim_dir = Path(__file__).parent
     frontend_dir = sim_dir / "webapp" / "frontend"
 
     processes: list[tuple[str, subprocess.Popen]] = []
@@ -285,7 +353,7 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
 
         backend_proc = subprocess.Popen(
             [
-                sys.executable,
+                str(backend_python),
                 "-m",
                 "uvicorn",
                 "sim.webapp.backend.main:app",
@@ -377,10 +445,16 @@ def cmd_webapp_start(args: argparse.Namespace) -> None:
 
 def cmd_webapp_backend(args: argparse.Namespace) -> None:
     """Start only backend server."""
+    sim_dir = Path(__file__).parent
+    backend_python = _get_preferred_backend_python(sim_dir)
+    if not _same_python_interpreter(backend_python, Path(sys.executable)):
+        os.execv(str(backend_python), [str(backend_python), "-m", "sim", *sys.argv[1:]])
+
     _print("[cyan]Starting SQL Server RCA Assistant backend...[/cyan]")
 
     backend_env = _backend_env_from_args(args)
     _validate_sqlserver_env(backend_env)
+    _ensure_backend_python_dependencies(backend_python, sim_dir)
     os.environ.update(backend_env)
 
     _print(f"  Server: http://{args.host}:{args.port}")
