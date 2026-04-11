@@ -22,23 +22,7 @@ Whether you are an accidental DBA debugging a production issue or a professional
   - application endpoints or features
   - query paths and ORM-generated SQL
   - inefficient patterns such as N+1 queries, missing batching, and over-fetching
-
-## Verified Incident Coverage
-
-The system was verified on both straightforward SQL Server incidents and more complex cascading failure patterns, including cases where one bottleneck leads to secondary symptoms that can distract diagnosis.
-
-Examples include:
-- blocking chains
-- deadlocks
-- parameter sniffing
-- missing-index regressions
-- CPU pressure
-- tempdb spills
-- memory grant queueing
-- log write stalls
-- statistics regressions
-- hot-partition contention
-- I/O storm cascades
+- The system was verified on both straightforward SQL Server incidents and more complex cascading failure patterns, including cases where one bottleneck leads to secondary symptoms that can distract diagnosis. Examples include: blocking chains, deadlocks, parameter sniffing, missing-index regressions, CPU pressure, tempdb spills, memory grant queueing, log write stalls, statistics regressions, hot-partition contention, and I/O storm cascades
 
 ## Example Questions You Can Ask
 
