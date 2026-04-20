@@ -34,6 +34,17 @@ Whether you are an accidental DBA debugging a production issue or a professional
 
 ## Manual (Start Here)
 
+### Get the Code
+- If you already have this repository on disk, skip this step.
+- If you are comfortable with Git:
+
+```bash
+git clone https://github.com/dzigz/sql-server-rca-assistant.git
+cd sql-server-rca-assistant
+```
+
+- If you are not using Git yet, download the repository as a ZIP from GitHub, unzip it, then open Terminal in the extracted `sql-server-rca-assistant` folder.
+
 ### Prerequisites
 - Primary tested environment is macOS, hence the documented prerequisites setup is currently macOS-focused. Linux and Windows should work by installing the same prerequisites.
 - Homebrew is the recommended package manager on macOS. If you do not have it yet:
@@ -78,6 +89,7 @@ docker compose version
 Wait until Docker Desktop is fully started before running the app. `docker info` confirms the Docker daemon is up, and Docker Desktop already includes Docker Compose.
 
 - A reachable SQL Server instance and credentials with diagnostic permissions
+- An Anthropic API key for AI-driven analysis. Without `ANTHROPIC_API_KEY`, the app can start but RCA chat analysis will fail when you send a message.
 
 ### Install Dependencies
 
@@ -90,17 +102,42 @@ python -m pip install -r sim/requirements.txt
 npm --prefix sim/webapp/frontend install
 ```
 
-### Point the App to Your SQL Server Target
+### Create a Local Config File
+- The app automatically loads `sim/.env` if it exists. This is the easiest setup for repeated local use.
 
 ```bash
-export SQLSERVER_HOST='your-sqlserver-host'
-export SQLSERVER_PORT='1433'
-export SQLSERVER_USER='sa'
-export SQLSERVER_PASSWORD='your-password'
-export SQLSERVER_DATABASE='master'
+cp sim/.env.example sim/.env
 ```
 
-### Start Everything
+- Edit `sim/.env` and set at least:
+
+```dotenv
+SQLSERVER_HOST=your-sqlserver-host
+SQLSERVER_PORT=1433
+SQLSERVER_USER=sa
+SQLSERVER_PASSWORD=your-password
+SQLSERVER_DATABASE=master
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+- You can still use shell `export` commands instead of `sim/.env` if you prefer. The resulting values are the same.
+
+### SQL Permissions Note
+- Your SQL login must be able to run the diagnostic queries used by the app.
+- By default, the app auto-installs First Responder Kit / Blitz procedures if they are missing. That means the login may also need permission to create procedures in `master`.
+- If your environment does not allow that, either pre-install the procedures separately or start with `--no-auto-install-blitz`.
+
+### Simplest First Run (No Docker)
+- If you want the fastest first-time setup and only need direct SQL diagnostics, skip the monitoring stack:
+
+```bash
+python -m sim webapp start --no-monitoring-stack --no-monitoring
+```
+
+- This mode starts the web app without ClickHouse, Grafana, or Docker.
+- Open [http://localhost:3000](http://localhost:3000).
+
+### Start Everything (Full Monitoring Stack)
 
 ```bash
 python -m sim webapp start
@@ -115,6 +152,7 @@ This default command:
 
 Monitoring notes:
 - Docker Desktop/Engine must already be running for the default startup path.
+- The bundled monitoring stack does not include a SQL Server instance. The DMV collector connects to your existing SQL Server target using the `SQLSERVER_*` settings you configured.
 - Verify Docker before starting:
 
 ```bash
@@ -126,6 +164,13 @@ docker compose version
   - `8123` ClickHouse
   - `8080` DMV collector health API
   - `3001` Grafana
+- After startup, you can verify the monitoring services are healthy with:
+
+```bash
+curl http://localhost:8080/health
+curl http://localhost:3001/api/health
+```
+
 - If Docker is unavailable and you want direct SQL diagnostics only, run:
 
 ```bash
@@ -138,6 +183,7 @@ python -m sim webapp start --no-monitoring-stack --no-monitoring
 python -m sim webapp start --no-monitoring-stack
 ```
 
+- Use `--no-monitoring-stack` only if ClickHouse and the DMV collector are already running and reachable through the configured `CLICKHOUSE_*` settings.
 - Monitoring-backed chat analysis needs baseline data before recent-vs-baseline comparisons are meaningful. Plan to wait about 10-15 minutes after the collector starts.
 - Direct SQL diagnostics such as `sp_Blitz` and server configuration checks work immediately; they do not require the monitoring stack.
 
@@ -191,6 +237,12 @@ docker compose -f sim/docker/docker-compose.yaml logs dmv-collector
 docker compose -f sim/docker/docker-compose.yaml logs clickhouse
 docker compose -f sim/docker/docker-compose.yaml down
 ```
+
+### First-Run Troubleshooting
+- If chat analysis fails immediately, verify `ANTHROPIC_API_KEY` is set in `sim/.env` or your shell.
+- If the default startup path fails, verify Docker Desktop is running with `docker info`.
+- If Blitz installation fails, your SQL login may not have enough permission to install procedures in `master`; retry with `--no-auto-install-blitz` or pre-install the scripts with a higher-privilege login.
+- If ports are already in use, start the app on different ports with `python -m sim webapp start --backend-port 8001 --frontend-port 3002`.
 
 ## Command Options
 
