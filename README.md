@@ -1,5 +1,5 @@
 <div align="center">
-  <p><strong>SQL Server RCA Assistant</strong><br><img src="docs/images/sql_server_assistant_logo.png" alt="SQL Server RCA Assistant logo" width="340"></p>
+  <p><img src="docs/images/sql_server_assistant_title.svg" alt="SQL Server RCA Assistant" width="700"><br><img src="docs/images/sql_server_assistant_logo.png" alt="SQL Server RCA Assistant logo" width="340"></p>
 </div>
 
 SQL Server RCA Assistant is a local-first tool that helps you understand why your database, or your app, is slow.
