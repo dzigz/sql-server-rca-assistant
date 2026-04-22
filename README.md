@@ -1,4 +1,8 @@
-# SQL Server RCA Assistant
+<p align="center">
+  <img src="docs/images/sql_server_assistant_logo.png" alt="SQL Server RCA Assistant logo" width="180">
+</p>
+
+<h1 align="center">SQL Server RCA Assistant</h1>
 
 SQL Server RCA Assistant is a local-first tool that helps you understand why your database, or your app, is slow.
 
@@ -12,7 +16,7 @@ Whether you are an accidental DBA debugging a production issue or a professional
 
 ## Video Walkthroughs
 
-The thumbnails below open full demo videos hosted in GitHub Releases. Depending on your browser settings, the video may play in a new tab or download directly.
+The thumbnails below open full demo videos hosted in GitHub Releases. Depending on your browser settings, the video may play in a new tab or download directly. Click on an image to play each video.
 
 ### End-to-End Installation Walkthrough
 
