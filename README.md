@@ -10,6 +10,22 @@ Whether you are an accidental DBA debugging a production issue or a professional
 
 ![SQL Server RCA Assistant screenshot](docs/images/sql_assistant_screenshot.png)
 
+## Video Walkthroughs
+
+The thumbnails below open full demo videos hosted in GitHub Releases. Depending on your browser settings, the video may play in a new tab or download directly.
+
+[![Installation demo](docs/images/installation_demo_cover.jpg)](https://github.com/dzigz/sql-server-rca-assistant/releases/download/readme-demo-videos/installation_demo.mp4)
+
+End-to-end installation walkthrough covering prerequisites, local configuration, startup, and first-run verification.
+
+[![Incident RCA demo](docs/images/incident_demo_cover.jpg)](https://github.com/dzigz/sql-server-rca-assistant/releases/download/readme-demo-videos/incident_demo.mp4)
+
+Example incident investigation showing how the assistant narrows down a live performance problem.
+
+[![Database health demo](docs/images/db_health_demo_cover.jpg)](https://github.com/dzigz/sql-server-rca-assistant/releases/download/readme-demo-videos/db_health_demo.mp4)
+
+Example health-check workflow for a broader server review outside a single incident.
+
 ## What It Does
 
 - Connects directly to your SQL Server instance and runs proven diagnostics such as First Responder Kit-style checks
